@@ -31,34 +31,34 @@ english_to_index = {
     'z': 25
 }
 
-# Source: https://en.wikipedia.org/wiki/Letter_frequency
+# Source: book
 english_letter_frequency = {
-    'a': 8.167,
-    'b': 14.492,
-    'c': 2.202,
-    'd': 4.523,
-    'e': 12.702,
-    'f': 2.228,
-    'g': 2.015,
-    'h': 6.094,
-    'i': 6.966,
-    'j': 0.153,
-    'k': 1.292,
-    'l': 4.025,
-    'm': 2.406,
-    'n': 6.749,
-    'o': 7.507,
-    'p': 1.929,
-    'q': 0.095,
-    'r': 5.987,
-    's': 6.327,
-    't': 9.356,
-    'u': 2.758,
-    'v': 0.978,
-    'w': 2.560,
-    'x': 0.150,
-    'y': 1.994,
-    'z': 0.077
+    'a': 0.082,
+    'b': 0.015,
+    'c': 0.028,
+    'd': 0.043,
+    'e': 0.127,
+    'f': 0.022,
+    'g': 0.020,
+    'h': 0.061,
+    'i': 0.070,
+    'j': 0.002,
+    'k': 0.008,
+    'l': 0.040,
+    'm': 0.024,
+    'n': 0.067,
+    'o': 0.075,
+    'p': 0.019,
+    'q': 0.001,
+    'r': 0.060,
+    's': 0.063,
+    't': 0.091,
+    'u': 0.028,
+    'v': 0.010,
+    'w': 0.023,
+    'x': 0.001,
+    'y': 0.020,
+    'z': 0.001
 }
 
 cipher_letter_frequency = {
@@ -144,6 +144,10 @@ for i in range(0, len(outlierMatches) - 1):
 # Guess the key by getting the most common distance
 key = max(distances, key=distances.get)
 
+print('The key length is: ')
+print(key)
+print('\n')
+
 # Divide raw text into substrings based on key length
 split = {}
 
@@ -153,37 +157,46 @@ for i in range(0, key):
 for i in range(0, len(raw_text) - key, key):
     for j in range(0, key):
         split[j] += raw_text[i+j]
+
+# I made a function at this point to avoid horribly complicated nested maps
+def solveCaesar(cipher):
+    frequencies = []
+
+    for i in range(0, ALPHABET_LETTERS):
+        frequencies.append(cipher_letter_frequency.copy())
+
+    for i in range(0, ALPHABET_LETTERS):
+        shifted = ""
+        for j in range(0, len(cipher)):
+            shifted += chr((ord(cipher[j]) + i - 97) % 26 + 97)
+
+        # Determine letter frequency 
+        for letter in shifted:
+            frequencies[i][letter] += 1
         
+    for i in range(len(frequencies)):
+        for letter, amount in frequencies[i].items():
+            frequencies[i][letter] = amount / len(cipher)
 
-# Use frequency analysis on all substrings
-frequencies = []
+    # Determine max english vector DOT cipher vector and record index (this should be the key)
+    sums = {}
+    maxSum = -999
+    maxSum_i = 0
 
-for i in range(0, key):
-    frequencies.append(cipher_letter_frequency.copy())
+    for i in range(len(frequencies)):
+        sum = 0
+        for letter, amount in frequencies[i].items():
+            # Dot product
+            sum += frequencies[i][letter] * english_letter_frequency[letter]
+        
+        sums[i] = sum    
+        if (sum > maxSum):
+            maxSum = sum
+            maxSum_i = i
+    
+    return maxSum_i
 
-# Determine letter frequency of ciphertext
-for i, substr in split.items():
-    for letter in substr:
-        frequencies[i][letter] += 1
+print('The key is: ')
 
-print(frequencies)
-
-# Sort letter frequencies and map to english frequencies
-sorted_cipher_letter_frequencies = []
-sorted_english_letter_frequencies = []
-
-for i in range(0, key):
-    sorted_cipher_letter_frequencies.append(sorted(frequencies[i], key = frequencies[i].get, reverse=True))
-
-sorted_english_letter_frequencies = sorted(english_letter_frequency, key = english_letter_frequency.get, reverse=True)
-
-
-# Determine the shift between english and cipher when comparing most common letters for each subgroup
-shifts = {}
-
-for i in range(0, len(sorted_cipher_letter_frequencies)):
-    shifts[i] = []
-
-for i in range(0, len(sorted_cipher_letter_frequencies)):
-    for j in range(0, len(sorted_cipher_letter_frequencies[i])):
-        shifts[i].append((english_to_index[sorted_english_letter_frequencies[j]] + english_to_index[sorted_cipher_letter_frequencies[i][j]]) % 26)
+for i in range(0, len(split)):
+    print(solveCaesar(split[i]))
